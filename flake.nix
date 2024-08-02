@@ -78,6 +78,7 @@
         {
           packages.systemd-credsubst = craneLib.buildPackage (commonArgs // {
             inherit cargoArtifacts;
+            meta.mainProgram = "systemd-credsubst";
             passthru = { inherit cargoArtifacts commonArgs; };
           });
 
