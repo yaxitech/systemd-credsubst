@@ -1,0 +1,17 @@
+[package]
+name = "systemd-credsubst"
+description = "Substitute systemd credential references from ExecStart=/ExecStartPre= calls"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.80"
+publish = false
+
+[dependencies]
+anyhow = "1"
+clap = { version = "4", features = ["cargo","derive"] }
+regex = "1"
+
+[dev-dependencies]
+assert_cmd = "2"
+indoc = "2"
+tempfile = "3"

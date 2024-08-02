@@ -1,0 +1,29 @@
+[advisories]
+version = 2
+yanked = "deny"
+ignore = [
+]
+
+[bans]
+wildcards = "deny"
+
+[licenses]
+allow = [
+    "Apache-2.0",
+    "MIT",
+    "Unicode-DFS-2016",
+    "Unicode-3.0",
+    "BSD-3-Clause",
+    "ISC",
+    "OpenSSL",
+]
+
+[licenses.private]
+ignore = true
+
+[[licenses.clarify]]
+name = "ring"
+expression = "MIT AND ISC AND OpenSSL"
+license-files = [
+    { path = "LICENSE", hash = 0xbd0eed23 }
+]
