@@ -1,0 +1,9 @@
+name: 'Update flake inputs'
+
+on:
+  workflow_dispatch:
+
+jobs:
+  update-flake:
+    uses: yaxitech/github-workflows/.github/workflows/update-flake.yaml@main
+    secrets: inherit
