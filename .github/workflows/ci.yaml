@@ -23,7 +23,7 @@ jobs:
         run: nix flake check -L
       - name: Build Codecov report
         run: |
-          nix build -L .#checks.x86_64-linux.systemd-credsubst-codecov
+          nix build -L .#checks.x86_64-linux.systemd-credsubst-nextest
       - name: Upload to Codecov
         uses: codecov/codecov-action@v4
         with:
