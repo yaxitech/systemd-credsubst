@@ -1,3 +1,5 @@
+name: CI
+
 on:
   pull_request:
     branches: [main]
@@ -5,8 +7,7 @@ on:
     branches: [main]
 
 jobs:
-  checks-linux:
-    name: CI (linux)
+  linux:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -23,12 +24,11 @@ jobs:
       - name: Build Codecov report
         run: |
           nix build -L .#checks.x86_64-linux.systemd-credsubst-codecov
-          cp -L ./result ./codecov.json
       - name: Upload to Codecov
         uses: codecov/codecov-action@v4
         with:
           fail_ci_if_error: true
-          files: ./codecov.json
+          files: ./result/codecov.json
           token: ${{ secrets.CODECOV_TOKEN }}
       - name: Build static binary
         run: nix build -L .#systemd-credsubst-static
@@ -40,8 +40,7 @@ jobs:
           if-no-files-found: error
           retention-days: ${{ github.event_name == 'pull_request' && 5 || 0 }}
 
-  checks-macos:
-    name: CI (macos)
+  macos:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
