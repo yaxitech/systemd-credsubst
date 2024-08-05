@@ -54,21 +54,6 @@
           commonArgs = {
             inherit src;
             strictDeps = true;
-
-            nativeBuildInputs = with pkgs; [
-              cmake
-              perl
-              pkg-config
-            ];
-
-            buildInputs = (with pkgs; [
-              openssl
-            ]) ++ lib.optionals pkgs.stdenv.isDarwin (with pkgs.darwin.apple_sdk.frameworks; [
-              Security
-              SystemConfiguration
-            ]);
-
-            doCheck = false;
           };
 
           # Build *just* the cargo dependencies, so we can reuse
@@ -78,6 +63,7 @@
         {
           packages.systemd-credsubst = craneLib.buildPackage (commonArgs // {
             inherit cargoArtifacts;
+            doCheck = false;
             meta.mainProgram = "systemd-credsubst";
             passthru = { inherit cargoArtifacts commonArgs; };
           });
@@ -116,6 +102,16 @@
             systemd-credsubst-deny = craneLib.cargoDeny {
               inherit src;
             };
+
+            # Run tests with cargo-nextest and, on Linux, with coverage for Codecov
+            systemd-credsubst-nextest = craneLib.cargoNextest (commonArgs // {
+              inherit cargoArtifacts;
+              partitions = 1;
+              partitionType = "count";
+            } // lib.optionalAttrs pkgs.stdenv.isLinux {
+              withLlvmCov = true;
+              cargoLlvmCovExtraArgs = ''--codecov --output-path "$out/codecov.json"'';
+            });
           };
 
           apps.systemd-credsubst = flake-utils.lib.mkApp {
@@ -135,23 +131,10 @@
       (flake-utils.lib.eachSystem [ "x86_64-linux" "aarch64-linux" ] (system:
         let pkgs = pkgsFor system; in {
           packages.systemd-credsubst-static = self.packages.${system}.systemd-credsubst.overrideAttrs (_: {
-            strictDeps = true;
-
             CARGO_BUILD_TARGET = pkgs.pkgsStatic.stdenv.targetPlatform.rust.cargoShortTarget;
-            CARGO_BUILD_RUSTFLAGS = "-C target-feature=+crt-static";
-            # Tell openssl-sys where to find static OpenSSL
-            OPENSSL_LIB_DIR = "${pkgs.pkgsStatic.openssl.out}/lib";
-            OPENSSL_INCLUDE_DIR = "${pkgs.pkgsStatic.openssl.dev}";
           });
 
           packages.default = self.packages.${system}.systemd-credsubst-static;
-
-          checks.systemd-credsubst-codecov = pkgs.craneLib.cargoLlvmCov (
-            self.packages.${system}.systemd-credsubst.passthru.commonArgs // {
-              inherit (self.packages.${system}.systemd-credsubst.passthru) cargoArtifacts;
-              cargoLlvmCovExtraArgs = ''--codecov --output-path "$out"'';
-            }
-          );
 
           checks.systemd-credsubst-nixos-test = pkgs.callPackage ./nixos/tests/nixos-test-systemd-credsubst.nix {
             systemd-credsubst = self.packages.${system}.default;
