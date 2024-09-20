@@ -41,9 +41,15 @@ struct Cli {
     #[arg(
         short,
         long,
-        help = "Copy input to output if $CREDENTIALS_DIRECTORY is not set"
+        help = "Copy input to output if $CREDENTIALS_DIRECTORY is not set."
     )]
     copy_if_no_creds: bool,
+    #[arg(
+        short,
+        long,
+        help = "Make parent directories of the output file as needed."
+    )]
+    make_parents: bool,
 }
 
 fn validate_path_exists(path: &str) -> Result<PathBuf, String> {
@@ -95,10 +101,17 @@ fn input_reader(input: Option<&PathBuf>) -> Result<Box<dyn Read>> {
     Ok(reader)
 }
 
-fn output_writer(output: Option<&PathBuf>) -> Result<Box<dyn Write>> {
+fn output_writer(output: Option<&PathBuf>, make_parents: bool) -> Result<Box<dyn Write>> {
     let writer: Box<dyn Write> = match output {
         None => Box::new(io::stdout()) as Box<dyn Write>,
         Some(filename) => {
+            if make_parents {
+                let parent_dir = &filename.parent().unwrap_or(Path::new("/"));
+                fs::create_dir_all(parent_dir).context(format!(
+                    "Failed to create parent directories of '{}'",
+                    filename.display()
+                ))?;
+            }
             let f = File::create(filename).context(format!(
                 "Failed to open '{}' for writing",
                 filename.display()
@@ -109,9 +122,9 @@ fn output_writer(output: Option<&PathBuf>) -> Result<Box<dyn Write>> {
     Ok(writer)
 }
 
-fn passthru(input: Option<&PathBuf>, output: Option<&PathBuf>) -> Result<()> {
+fn passthru(input: Option<&PathBuf>, output: Option<&PathBuf>, make_parents: bool) -> Result<()> {
     let mut reader = input_reader(input)?;
-    let mut writer = output_writer(output)?;
+    let mut writer = output_writer(output, make_parents)?;
 
     io::copy(&mut reader, &mut writer)?;
 
@@ -141,6 +154,7 @@ fn substitute(
     output: Option<&PathBuf>,
     creds_dir: &str,
     pattern: &Regex,
+    make_parents: bool,
 ) -> Result<()> {
     // Read input as string
     let mut reader = input_reader(input)?;
@@ -174,7 +188,7 @@ fn substitute(
     )?;
 
     // Write the modified contents
-    let mut writer = output_writer(output)?;
+    let mut writer = output_writer(output, make_parents)?;
     writer.write_all(modified.as_bytes())?;
 
     Ok(())
@@ -197,10 +211,11 @@ fn main() -> Result<ExitCode> {
             cli.output.as_ref(),
             &creds_dir?,
             &cli.pattern,
+            cli.make_parents,
         )?,
         Err(err) => {
             if cli.copy_if_no_creds {
-                passthru(cli.input.as_ref(), cli.output.as_ref())?;
+                passthru(cli.input.as_ref(), cli.output.as_ref(), cli.make_parents)?;
             } else {
                 return Err(err);
             }
