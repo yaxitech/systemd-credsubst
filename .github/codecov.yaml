@@ -1,0 +1,9 @@
+github_checks:
+  annotations: false
+coverage:
+  status:
+    project: off
+    patch: off
+# Fix path of Nix sandbox
+fixes:
+   - "/build/source::"
