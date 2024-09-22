@@ -48,9 +48,10 @@ nixosTest {
         };
       };
 
-      specialisation."passthru".configuration = {
+      specialisation."passthru-parents".configuration = {
         systemd.services.systemd-credsubst-test.serviceConfig = {
-          ExecStartPre = lib.mkForce [ "${systemd-credsubst}/bin/systemd-credsubst -c -i ${appsettings} -o appsettings.json" ];
+          ExecStart = lib.mkForce "${pkgsStatic.busybox}/bin/tail -f -n +1 some/dir/appsettings.json";
+          ExecStartPre = lib.mkForce [ "${systemd-credsubst}/bin/systemd-credsubst -c -i ${appsettings} -m -o some/dir/appsettings.json" ];
           LoadCredential = lib.mkForce [ ];
         };
       };
@@ -64,10 +65,10 @@ nixosTest {
       out = machine.succeed("cat /run/systemd-credsubst-test/workdir/appsettings.json")
       assert out == '{"license":"prometheus","name":"Wurzelpfropf Banking"}', f"appsettings.json has unexpected content '{out}'"
 
-    with subtest("passthru works"):
-      machine.succeed("${nodes.machine.system.build.toplevel}/specialisation/passthru/bin/switch-to-configuration test")
+    with subtest("passthru and make parents works"):
+      machine.succeed("${nodes.machine.system.build.toplevel}/specialisation/passthru-parents/bin/switch-to-configuration test")
       machine.wait_for_unit("systemd-credsubst-test.service");
-      out = machine.succeed("cat /run/systemd-credsubst-test/workdir/appsettings.json")
+      out = machine.succeed("cat /run/systemd-credsubst-test/workdir/some/dir/appsettings.json")
       assert out == '{"license":"''${license}","name":"Wurzelpfropf Banking"}', f"appsettings.json has unexpected content '{out}'"
   '';
 }

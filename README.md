@@ -62,7 +62,8 @@ Options:
   -i, --input <FILE>       If no input file is given, read from stdin.
   -o, --output <FILE>      If no output file is given, write to stdout.
   -p, --pattern <PATTERN>  Regex pattern to replace. Must at least provide a named group 'id'. By default matches ${id}. [default: \$\{(?P<id>[^\$\{\}/]+)\}]
-  -c, --copy-if-no-creds   Copy input to output if $CREDENTIALS_DIRECTORY is not set
+  -c, --copy-if-no-creds   Copy input to output if $CREDENTIALS_DIRECTORY is not set.
+  -m, --make-parents       Make parent directories of the output file as needed.
   -h, --help               Print help
   -V, --version            Print version
 ```

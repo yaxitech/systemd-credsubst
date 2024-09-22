@@ -249,3 +249,61 @@ fn copy_if_no_creds() -> Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn make_parents() -> Result<()> {
+    let credentials_dir = tempfile::tempdir()?;
+    let mut file = File::create(credentials_dir.path().join("yaxi-license"))?;
+    file.write_all(b"hunter1\n\n")?;
+
+    let out_dir = tempfile::tempdir()?;
+    let output_filename = out_dir.path().join("wur/zel/pfropf");
+
+    Command::cargo_bin(crate_name!())?
+        .env("CREDENTIALS_DIRECTORY", credentials_dir.path())
+        .arg("--output")
+        .arg(&output_filename)
+        .arg("--make-parents")
+        .write_stdin(indoc! {r#"
+            {
+                "wurzel": "pfropf",
+                "license": "${yaxi-license}",
+                "wuff": "c://msdog",
+                "password": "secret-password:${/with-special-chars}"
+            }
+        "#})
+        .assert();
+
+    assert_eq!(
+        std::fs::read_to_string(output_filename)?,
+        indoc! {r#"
+            {
+                "wurzel": "pfropf",
+                "license": "hunter1",
+                "wuff": "c://msdog",
+                "password": "secret-password:${/with-special-chars}"
+            }
+        "#}
+    );
+
+    Ok(())
+}
+
+#[test]
+fn fails_no_make_parents() -> Result<()> {
+    Command::cargo_bin(crate_name!())?
+        .arg("--output")
+        .arg("/does/not/exist")
+        .arg("--copy-if-no-creds")
+        .write_stdin("wurzelpfropf")
+        .assert()
+        .stdout("")
+        .stderr(indoc! {r#"
+            Error: Failed to open '/does/not/exist' for writing
+
+            Caused by:
+                No such file or directory (os error 2)
+        "#});
+
+    Ok(())
+}
