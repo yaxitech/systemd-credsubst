@@ -62,7 +62,10 @@
             inherit cargoArtifacts;
             doCheck = false;
             meta.mainProgram = "systemd-credsubst";
-            passthru = { inherit cargoArtifacts commonArgs; };
+            passthru = {
+              inherit cargoArtifacts commonArgs;
+              inherit (self) lib;
+            };
           });
 
           packages.default = self.packages.${system}.systemd-credsubst;
@@ -136,8 +139,16 @@
           checks.systemd-credsubst-nixos-test = pkgs.callPackage ./nixos/tests/nixos-test-systemd-credsubst.nix {
             systemd-credsubst = self.packages.${system}.default;
           };
+
+          checks.systemd-credsubst-nixos-test-mk-load-credential-option = pkgs.callPackage ./nixos/tests/nixos-test-mk-load-credential-option {
+            systemdCredsubstOverlay = self.overlays.default;
+          };
         }
       ))
+
+      {
+        lib = import ./nixos/lib { inherit (nixpkgs) lib; };
+      }
 
       #
       # SYSTEM-INDEPENDENT OUTPUTS
