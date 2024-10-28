@@ -51,7 +51,7 @@ in
         DynamicUser = true;
 
         LoadCredential = pkgs.systemd-credsubst.lib.toLoadCredentialList cfg.settings;
-        ExecStartPre = [ "${pkgs.systemd-credsubst}/bin/systemd-credsubst -i ${configFile} -o appsettings.json" ];
+        ExecStartPre = [ "${pkgs.systemd-credsubst}/bin/systemd-credsubst --escape-newlines -i ${configFile} -o appsettings.json" ];
         ExecStart = "${pkgs.pkgsStatic.busybox}/bin/tail -f -n +1 appsettings.json";
 
         WorkingDirectory = "/run/systemd-credsubst-test/workdir";

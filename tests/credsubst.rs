@@ -307,3 +307,35 @@ fn fails_no_make_parents() -> Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn escape_newlines() -> Result<()> {
+    let credentials_dir = tempfile::tempdir()?;
+    let mut file = File::create(credentials_dir.path().join("yaxi-license"))?;
+    file.write_all(b"This\nis\na\nmulti-line\n\n\nlicense\n")?;
+
+    let mut cmd = Command::cargo_bin(crate_name!())?;
+    let assert = cmd
+        .env("CREDENTIALS_DIRECTORY", credentials_dir.path())
+        .arg("--escape-newlines")
+        .write_stdin(indoc! {r#"
+            {
+                "wurzel": "pfropf",
+                "license": "${yaxi-license}",
+                "wuff": "c://msdog",
+                "password": "secret-password:${/with-special-chars}"
+            }
+        "#})
+        .assert();
+
+    assert.success().stdout(indoc! {r#"
+        {
+            "wurzel": "pfropf",
+            "license": "This\nis\na\nmulti-line\n\n\nlicense",
+            "wuff": "c://msdog",
+            "password": "secret-password:${/with-special-chars}"
+        }
+    "#});
+
+    Ok(())
+}
