@@ -50,6 +50,8 @@ struct Cli {
         help = "Make parent directories of the output file as needed."
     )]
     make_parents: bool,
+    #[arg(short, long, help = "Escape newlines.")]
+    escape_newlines: bool,
 }
 
 fn validate_path_exists(path: &str) -> Result<PathBuf, String> {
@@ -155,6 +157,7 @@ fn substitute(
     creds_dir: &str,
     pattern: &Regex,
     make_parents: bool,
+    escape_newlines: bool,
 ) -> Result<()> {
     // Read input as string
     let mut reader = input_reader(input)?;
@@ -182,6 +185,13 @@ fn substitute(
                     fs::read_to_string(secret_path)
                         .context(format!("Failed to open '{secret_path}' for reading"))
                         .map(|s| s.trim_end().to_string())
+                        .map(|s| {
+                            if escape_newlines {
+                                s.replace("\n", "\\n")
+                            } else {
+                                s
+                            }
+                        })
                 },
             )
         },
@@ -212,6 +222,7 @@ fn main() -> Result<ExitCode> {
             &creds_dir?,
             &cli.pattern,
             cli.make_parents,
+            cli.escape_newlines,
         )?,
         Err(err) => {
             if cli.copy_if_no_creds {

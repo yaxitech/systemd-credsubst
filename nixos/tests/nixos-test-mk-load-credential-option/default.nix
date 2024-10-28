@@ -30,7 +30,7 @@ nixosTest {
       mkdir --mode 700 -p /run/secrets
       echo "CLqLt9zrR5k92TqVgIUSNu+gV4pyCuNu8F9X3pEfA28=" > /run/secrets/a-key
       echo "wurzelpfropf" > /run/secrets/a-name
-      echo -en "prometheus\n\n" > /run/secrets/a-password
+      echo -en "prome\ntheus\n\n" > /run/secrets/a-password
     '';
   };
 
@@ -51,7 +51,7 @@ nixosTest {
         "maybeASecret": "kartoffelpuffer",
         "secretKey": "CLqLt9zrR5k92TqVgIUSNu+gV4pyCuNu8F9X3pEfA28=",
         "secretName": "wurzelpfropf",
-        "secretPassword": "prometheus"
+        "secretPassword": "prome\ntheus"
       }
       assert actual == expected, f"appsettings.json has unexpected content '{out}'"
 
