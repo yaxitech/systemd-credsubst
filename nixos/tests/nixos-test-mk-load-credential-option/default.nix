@@ -15,6 +15,7 @@ nixosTest {
       enable = true;
       settings = {
         environment = "Production";
+        secretFile = "/run/secrets/a-file";
         secretKey = "/run/secrets/a-key";
         secretName.path = "/run/secrets/a-name";
         secretPassword = {
@@ -31,6 +32,7 @@ nixosTest {
       echo "CLqLt9zrR5k92TqVgIUSNu+gV4pyCuNu8F9X3pEfA28=" > /run/secrets/a-key
       echo "wurzelpfropf" > /run/secrets/a-name
       echo -en "prome\ntheus\n\n" > /run/secrets/a-password
+      echo -en "hunter1" > /run/secrets/a-file
     '';
   };
 
@@ -49,6 +51,7 @@ nixosTest {
           "wurzel": "pfropf"
         },
         "maybeASecret": "kartoffelpuffer",
+        "secretFile": "hunter1",
         "secretKey": "CLqLt9zrR5k92TqVgIUSNu+gV4pyCuNu8F9X3pEfA28=",
         "secretName": "wurzelpfropf",
         "secretPassword": "prome\ntheus"
@@ -59,7 +62,8 @@ nixosTest {
       out = machine.succeed("systemctl cat systemd-credsubst-test.service")
       assert "LoadCredential=21e6346f7782c16114b4369f84525e53152450a1bc730196d52b63953645278f:/run/secrets/a-key" in out
       assert "LoadCredential=73b7f43eb8dc4f75baa5aa1f7e605f3a9438e6278600fee34631541edf14cb80:/run/secrets/a-name" in out
-      assert "LoadCredential=secret-password:/run/secrets/a-password"
+      assert "LoadCredential=secret-password:/run/secrets/a-password" in out
+      assert "LoadCredential=secret-file:/run/secrets/a-file" in out
 
       print(out)
   '';

@@ -15,7 +15,7 @@ let
       name = "passthruOrLoadCredentialPath";
       description = "LoadCredential= path outside of Nix store";
     };
-  typeLoadCredentialSubmodule = types.submodule ({ config, ... }: {
+  typeLoadCredentialSubmodule = attrs: types.submodule ({ config, ... }: {
     options.id = mkOption {
       # See https://github.com/systemd/systemd/blob/a108fcb/src/basic/path-util.c#L1157
       type = with types; nullOr (strMatching "[^\$\{\}/]+");
@@ -24,7 +24,7 @@ let
 
         Defaults to the SHA-256 digest of the `path`.
       '';
-      default = hashPath config.path;
+      default = attrs.id or hashPath config.path;
     };
     options.path = mkOption {
       type = typePassthruOrLoadCredentialPath { };
@@ -44,15 +44,15 @@ in
   # If the configuration assigns a value which matches the submodule's `passthru` attribute value,
   # no credential substitution is performed.
   mkLoadCredentialOption = attrs: mkOption ({
-    type = types.either (typePassthruOrLoadCredentialPath attrs) typeLoadCredentialSubmodule;
+    type = types.either (typePassthruOrLoadCredentialPath attrs) (typeLoadCredentialSubmodule attrs);
     apply = x:
       if (isAttrs x && hasAttr "id" x && hasAttr "path" x)
       then x // { ${loadCredentialOptionMagic} = true; }
       else
         if hasAttr "passthru" attrs && x == attrs.passthru
         then x
-        else { id = hashPath x; path = x; ${loadCredentialOptionMagic} = true; };
-  } // (removeAttrs attrs [ "passthru" ]));
+        else { id = attrs.id or (hashPath x); path = x; ${loadCredentialOptionMagic} = true; };
+  } // (removeAttrs attrs [ "id" "passthru" ]));
   # Transform config values containing a load credential option to the pattern expected by `systemd-credsubst`
   systemdCredsubstify = mapAttrsRecursiveCond (x: !isLoadCredentialOption x) (_path: value:
     if isLoadCredentialOption value then ''''${${value.id}}'' else value

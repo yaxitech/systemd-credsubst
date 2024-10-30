@@ -39,6 +39,11 @@ in
           description = "A very secret password";
           example = "/run/secrets/a-password";
         };
+        options.secretFile = pkgs.systemd-credsubst.lib.mkLoadCredentialOption {
+          id = "secret-file";
+          description = "A very secret file";
+          example = "/run/secrets/a-file";
+        };
       };
     };
   };
