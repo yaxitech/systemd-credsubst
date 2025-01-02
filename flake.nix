@@ -25,6 +25,16 @@
           rust-overlay.overlays.default
           (final: prev: {
             craneLib = (crane.mkLib prev).overrideToolchain (final.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml);
+            # https://github.com/oxalica/rust-overlay/issues/199
+            craneLibMinimal =
+              let
+                rustToolchainToml = lib.importTOML ./rust-toolchain.toml;
+                rustToolchainTomlMinimal = rustToolchainToml // {
+                  toolchain = lib.removeAttrs rustToolchainToml.toolchain [ "components" ];
+                };
+                rustToolchainTomlFile = final.writers.writeTOML "rust-toolchain-minimal.toml" rustToolchainTomlMinimal;
+              in
+              (crane.mkLib prev).overrideToolchain (final.rust-bin.fromRustupToolchainFile rustToolchainTomlFile);
           })
         ];
       };
@@ -35,6 +45,7 @@
           pkgs = pkgsFor system;
 
           craneLib = pkgs.craneLib;
+          craneLibMinimal = pkgs.craneLibMinimal;
 
           src = lib.fileset.toSource {
             root = ./.;
@@ -58,7 +69,7 @@
           cargoArtifacts = craneLib.buildDepsOnly commonArgs;
         in
         {
-          packages.systemd-credsubst = craneLib.buildPackage (commonArgs // {
+          packages.systemd-credsubst = craneLibMinimal.buildPackage (commonArgs // {
             inherit cargoArtifacts;
             doCheck = false;
             meta.mainProgram = "systemd-credsubst";
