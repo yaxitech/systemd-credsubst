@@ -81,6 +81,11 @@
 
           packages.default = self.packages.${system}.systemd-credsubst;
 
+          packages.install-dynamic = pkgs.callPackage ./nixos/pkgs/install {
+            craneLib = craneLibMinimal;
+          };
+          packages.install = self.packages.${system}.install-dynamic;
+
           checks = {
             packages = pkgs.linkFarmFromDrvs "build-all-packages" (lib.attrValues self.packages.${system});
 
@@ -146,6 +151,11 @@
           });
 
           packages.default = self.packages.${system}.systemd-credsubst-static;
+
+          packages.install-static = self.packages.${system}.install-dynamic.override {
+            target = pkgs.pkgsStatic.stdenv.targetPlatform.rust.cargoShortTarget;
+          };
+          packages.install = self.packages.${system}.install-static;
 
           checks.systemd-credsubst-nixos-test = pkgs.callPackage ./nixos/tests/nixos-test-systemd-credsubst.nix {
             systemd-credsubst = self.packages.${system}.default;
