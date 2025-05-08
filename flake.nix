@@ -70,6 +70,19 @@
 
           packages.default = self.packages.${system}.systemd-credsubst;
 
+          packages.install = pkgs.${if pkgs.stdenv.isLinux then "pkgsStatic" else "pkgs"}.callPackage
+            (
+              { uutils-coreutils, rustPlatform }:
+              rustPlatform.buildRustPackage (finalAttrs: {
+                inherit (uutils-coreutils) version src doCheck;
+                pname = "install";
+                cargoLock.lockFile = "${finalAttrs.src}/Cargo.lock";
+                cargoBuildFlags = "-p uu_${finalAttrs.pname}";
+                meta.mainProgram = finalAttrs.pname;
+              })
+            )
+            { };
+
           checks = {
             packages = pkgs.linkFarmFromDrvs "build-all-packages" (lib.attrValues self.packages.${system});
 
