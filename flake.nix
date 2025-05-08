@@ -127,11 +127,6 @@
             });
           };
 
-          apps.systemd-credsubst = flake-utils.lib.mkApp {
-            drv = self.packages.${system}.systemd-credsubst;
-          };
-          apps.default = self.apps.${system}.systemd-credsubst;
-
           devShells.default = craneLib.devShell {
             # Inherit inputs from checks.
             checks = self.checks.${system};
