@@ -64,6 +64,7 @@ Options:
   -p, --pattern <PATTERN>  Regex pattern to replace. Must at least provide a named group 'id'. By default matches ${id}. [default: \$\{(?P<id>[^\$\{\}/]+)\}]
   -c, --copy-if-no-creds   Copy input to output if $CREDENTIALS_DIRECTORY is not set.
   -m, --make-parents       Make parent directories of the output file as needed.
+  -e, --escape-newlines    Escape newlines.
   -h, --help               Print help
   -V, --version            Print version
 ```
