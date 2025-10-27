@@ -1,6 +1,7 @@
-{ nixosTest
+{
+  nixosTest,
   # args
-, systemdCredsubstOverlay
+  systemdCredsubstOverlay,
 }:
 nixosTest {
   name = "systemd-credsubst-test";

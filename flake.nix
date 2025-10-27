@@ -15,22 +15,36 @@
     };
   };
 
-  outputs = { self, rust-overlay, nixpkgs, crane, flake-utils, advisory-db, ... }:
+  outputs =
+    {
+      self,
+      rust-overlay,
+      nixpkgs,
+      crane,
+      flake-utils,
+      advisory-db,
+      ...
+    }:
     let
       lib = nixpkgs.lib;
       recursiveMerge = with lib; foldl recursiveUpdate { };
-      pkgsFor = system: import nixpkgs {
-        inherit system;
-        overlays = [
-          rust-overlay.overlays.default
-          (final: prev: {
-            craneLib = (crane.mkLib prev).overrideToolchain (final.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml);
-          })
-        ];
-      };
+      pkgsFor =
+        system:
+        import nixpkgs {
+          inherit system;
+          overlays = [
+            rust-overlay.overlays.default
+            (final: prev: {
+              craneLib = (crane.mkLib prev).overrideToolchain (
+                final.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml
+              );
+            })
+          ];
+        };
     in
     recursiveMerge [
-      (flake-utils.lib.eachDefaultSystem (system:
+      (flake-utils.lib.eachDefaultSystem (
+        system:
         let
           pkgs = pkgsFor system;
 
@@ -58,30 +72,31 @@
           cargoArtifacts = craneLib.buildDepsOnly commonArgs;
         in
         {
-          packages.systemd-credsubst = craneLib.buildPackage (commonArgs // {
-            inherit cargoArtifacts;
-            doCheck = false;
-            meta.mainProgram = "systemd-credsubst";
-            passthru = {
-              inherit cargoArtifacts commonArgs;
-              inherit (self) lib;
-            };
-          });
+          packages.systemd-credsubst = craneLib.buildPackage (
+            commonArgs
+            // {
+              inherit cargoArtifacts;
+              doCheck = false;
+              meta.mainProgram = "systemd-credsubst";
+              passthru = {
+                inherit cargoArtifacts commonArgs;
+                inherit (self) lib;
+              };
+            }
+          );
 
           packages.default = self.packages.${system}.systemd-credsubst;
 
-          packages.install = pkgs.${if pkgs.stdenv.isLinux then "pkgsStatic" else "pkgs"}.callPackage
-            (
-              { uutils-coreutils, rustPlatform }:
-              rustPlatform.buildRustPackage (finalAttrs: {
-                inherit (uutils-coreutils) version src doCheck;
-                pname = "install";
-                cargoLock.lockFile = "${finalAttrs.src}/Cargo.lock";
-                cargoBuildFlags = "-p uu_${finalAttrs.pname}";
-                meta.mainProgram = finalAttrs.pname;
-              })
-            )
-            { };
+          packages.install = pkgs.${if pkgs.stdenv.isLinux then "pkgsStatic" else "pkgs"}.callPackage (
+            { uutils-coreutils, rustPlatform }:
+            rustPlatform.buildRustPackage (finalAttrs: {
+              inherit (uutils-coreutils) version src doCheck;
+              pname = "install";
+              cargoLock.lockFile = "${finalAttrs.src}/Cargo.lock";
+              cargoBuildFlags = "-p uu_${finalAttrs.pname}";
+              meta.mainProgram = finalAttrs.pname;
+            })
+          ) { };
 
           checks = {
             packages = pkgs.linkFarmFromDrvs "build-all-packages" (lib.attrValues self.packages.${system});
@@ -92,14 +107,20 @@
             # Note that this is done as a separate derivation so that
             # we can block the CI if there are issues here, but not
             # prevent downstream consumers from building our crate by itself.
-            systemd-credsubst-clippy = craneLib.cargoClippy (commonArgs // {
-              inherit cargoArtifacts;
-              cargoClippyExtraArgs = "--all-targets -- --deny warnings";
-            });
+            systemd-credsubst-clippy = craneLib.cargoClippy (
+              commonArgs
+              // {
+                inherit cargoArtifacts;
+                cargoClippyExtraArgs = "--all-targets -- --deny warnings";
+              }
+            );
 
-            systemd-credsubst-doc = craneLib.cargoDoc (commonArgs // {
-              inherit cargoArtifacts;
-            });
+            systemd-credsubst-doc = craneLib.cargoDoc (
+              commonArgs
+              // {
+                inherit cargoArtifacts;
+              }
+            );
 
             # Check formatting
             systemd-credsubst-fmt = craneLib.cargoFmt {
@@ -117,40 +138,66 @@
             };
 
             # Run tests with cargo-nextest and, on Linux, with coverage for Codecov
-            systemd-credsubst-nextest = craneLib.cargoNextest (commonArgs // {
-              inherit cargoArtifacts;
-              partitions = 1;
-              partitionType = "count";
-            } // lib.optionalAttrs pkgs.stdenv.isLinux {
-              withLlvmCov = true;
-              cargoLlvmCovExtraArgs = ''--codecov --output-path "$out/codecov.json"'';
-            });
+            systemd-credsubst-nextest = craneLib.cargoNextest (
+              commonArgs
+              // {
+                inherit cargoArtifacts;
+                partitions = 1;
+                partitionType = "count";
+              }
+              // lib.optionalAttrs pkgs.stdenv.isLinux {
+                withLlvmCov = true;
+                cargoLlvmCovExtraArgs = ''--codecov --output-path "$out/codecov.json"'';
+              }
+            );
           };
 
           devShells.default = craneLib.devShell {
             # Inherit inputs from checks.
             checks = self.checks.${system};
           };
-        }))
+        }
+      ))
 
       #
       # LINUX OUTPUTS
       #
-      (flake-utils.lib.eachSystem [ "x86_64-linux" "aarch64-linux" ] (system:
-        let pkgs = pkgsFor system; in {
+      (flake-utils.lib.eachSystem [ "x86_64-linux" "aarch64-linux" ] (
+        system:
+        let
+          pkgs = pkgsFor system;
+        in
+        {
           packages.systemd-credsubst-static = self.packages.${system}.systemd-credsubst.overrideAttrs (_: {
             CARGO_BUILD_TARGET = pkgs.pkgsStatic.stdenv.targetPlatform.rust.cargoShortTarget;
           });
 
           packages.default = self.packages.${system}.systemd-credsubst-static;
 
-          checks.systemd-credsubst-nixos-test = pkgs.callPackage ./nixos/tests/nixos-test-systemd-credsubst.nix {
-            systemd-credsubst = self.packages.${system}.default;
-          };
+          checks.systemd-credsubst-nixos-test =
+            pkgs.callPackage ./nixos/tests/nixos-test-systemd-credsubst.nix
+              {
+                systemd-credsubst = self.packages.${system}.default;
+              };
 
-          checks.systemd-credsubst-nixos-test-mk-load-credential-option = pkgs.callPackage ./nixos/tests/nixos-test-mk-load-credential-option {
-            systemdCredsubstOverlay = self.overlays.default;
-          };
+          checks.systemd-credsubst-nixos-test-mk-load-credential-option =
+            pkgs.callPackage ./nixos/tests/nixos-test-mk-load-credential-option
+              {
+                systemdCredsubstOverlay = self.overlays.default;
+              };
+        }
+      ))
+
+      #
+      # FORMATTER
+      #
+      (flake-utils.lib.eachDefaultSystem (
+        system:
+        let
+          pkgs = pkgsFor system;
+        in
+        {
+          formatter = pkgs.nixfmt-tree;
         }
       ))
 
