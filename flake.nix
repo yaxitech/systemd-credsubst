@@ -72,18 +72,7 @@
           cargoArtifacts = craneLib.buildDepsOnly commonArgs;
         in
         {
-          packages.systemd-credsubst = craneLib.buildPackage (
-            commonArgs
-            // {
-              inherit cargoArtifacts;
-              doCheck = false;
-              meta.mainProgram = "systemd-credsubst";
-              passthru = {
-                inherit cargoArtifacts commonArgs;
-                inherit (self) lib;
-              };
-            }
-          );
+          packages.systemd-credsubst = pkgs.callPackage ./default.nix { };
 
           packages.default = self.packages.${system}.systemd-credsubst;
 
@@ -168,9 +157,7 @@
           pkgs = pkgsFor system;
         in
         {
-          packages.systemd-credsubst-static = self.packages.${system}.systemd-credsubst.overrideAttrs (_: {
-            CARGO_BUILD_TARGET = pkgs.pkgsStatic.stdenv.targetPlatform.rust.cargoShortTarget;
-          });
+          packages.systemd-credsubst-static = pkgs.pkgsStatic.callPackage ./default.nix { };
 
           packages.default = self.packages.${system}.systemd-credsubst-static;
 
@@ -211,6 +198,7 @@
       {
         overlays.default = final: _prev: {
           systemd-credsubst = self.packages.${final.system}.default;
+          systemd-credsubst-lib = self.lib;
         };
       }
     ];

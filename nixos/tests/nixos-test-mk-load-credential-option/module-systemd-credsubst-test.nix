@@ -10,7 +10,7 @@ let
   jsonFormat = (pkgs.formats.json { });
 
   configFile = jsonFormat.generate "appsettings.json" (
-    pkgs.systemd-credsubst.lib.systemdCredsubstify cfg.settings
+    pkgs.systemd-credsubst-lib.systemdCredsubstify cfg.settings
   );
 in
 {
@@ -22,12 +22,12 @@ in
         options.environment = mkOption {
           type = types.str;
         };
-        options.maybeASecret = pkgs.systemd-credsubst.lib.mkLoadCredentialOption {
+        options.maybeASecret = pkgs.systemd-credsubst-lib.mkLoadCredentialOption {
           description = "Maybe a secret, unless assigned `kartoffelpuffer`.";
           example = "/run/secrets/maybe-a-secret";
           passthru = "kartoffelpuffer";
         };
-        options.maybeADefaultSecret = pkgs.systemd-credsubst.lib.mkLoadCredentialOption rec {
+        options.maybeADefaultSecret = pkgs.systemd-credsubst-lib.mkLoadCredentialOption rec {
           description = ''Maybe a secret, unless assigned `{ wurzel = "pfropf"; }`.'';
           example = "/run/secrets/maybe-a-secret";
           default = {
@@ -35,16 +35,16 @@ in
           };
           passthru = default;
         };
-        options.secretKey = pkgs.systemd-credsubst.lib.mkLoadCredentialOption {
+        options.secretKey = pkgs.systemd-credsubst-lib.mkLoadCredentialOption {
           description = "A very secret key";
           example = "/run/secrets/a-key";
         };
-        options.secretName = pkgs.systemd-credsubst.lib.mkLoadCredentialOption {
+        options.secretName = pkgs.systemd-credsubst-lib.mkLoadCredentialOption {
           description = "A very secret name";
           example = "/run/secrets/a-name";
           passthru = "Kaiserschmarrn";
         };
-        options.secretPassword = pkgs.systemd-credsubst.lib.mkLoadCredentialOption {
+        options.secretPassword = pkgs.systemd-credsubst-lib.mkLoadCredentialOption {
           description = "A very secret password";
           example = "/run/secrets/a-password";
         };
@@ -59,7 +59,7 @@ in
       serviceConfig = {
         DynamicUser = true;
 
-        LoadCredential = pkgs.systemd-credsubst.lib.toLoadCredentialList cfg.settings;
+        LoadCredential = pkgs.systemd-credsubst-lib.toLoadCredentialList cfg.settings;
         ExecStartPre = [
           "${pkgs.systemd-credsubst}/bin/systemd-credsubst --escape-newlines -i ${configFile} -o appsettings.json"
         ];
