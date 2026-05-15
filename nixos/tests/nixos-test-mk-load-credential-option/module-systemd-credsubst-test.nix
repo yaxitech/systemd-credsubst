@@ -4,13 +4,20 @@
   pkgs,
   ...
 }:
-with lib;
 let
+  inherit (lib)
+    mkEnableOption
+    mkIf
+    mkOption
+    types
+    ;
+  inherit (pkgs.systemd-credsubst-lib) collectLoadCredential mapLoadCredential;
+
   cfg = config.services.systemd-credsubst-test;
-  jsonFormat = (pkgs.formats.json { });
+  jsonFormat = pkgs.formats.json { };
 
   configFile = jsonFormat.generate "appsettings.json" (
-    pkgs.systemd-credsubst-lib.systemdCredsubstify cfg.settings
+    mapLoadCredential (cred: "\${${cred.id}}") cfg.settings
   );
 in
 {
@@ -22,29 +29,39 @@ in
         options.environment = mkOption {
           type = types.str;
         };
-        options.maybeASecret = pkgs.systemd-credsubst-lib.mkLoadCredentialOption {
+        options.maybeASecret = mkOption {
+          type = pkgs.systemd-credsubst-lib.types.loadCredential {
+            passthru = "kartoffelpuffer";
+          };
           description = "Maybe a secret, unless assigned `kartoffelpuffer`.";
           example = "/run/secrets/maybe-a-secret";
-          passthru = "kartoffelpuffer";
         };
-        options.maybeADefaultSecret = pkgs.systemd-credsubst-lib.mkLoadCredentialOption rec {
+        options.maybeADefaultSecret = mkOption {
+          type = pkgs.systemd-credsubst-lib.types.loadCredential {
+            passthru = {
+              wurzel = "pfropf";
+            };
+          };
           description = ''Maybe a secret, unless assigned `{ wurzel = "pfropf"; }`.'';
           example = "/run/secrets/maybe-a-secret";
           default = {
             wurzel = "pfropf";
           };
-          passthru = default;
         };
-        options.secretKey = pkgs.systemd-credsubst-lib.mkLoadCredentialOption {
+        options.secretKey = mkOption {
+          type = pkgs.systemd-credsubst-lib.types.loadCredential { };
           description = "A very secret key";
           example = "/run/secrets/a-key";
         };
-        options.secretName = pkgs.systemd-credsubst-lib.mkLoadCredentialOption {
+        options.secretName = mkOption {
+          type = pkgs.systemd-credsubst-lib.types.loadCredential {
+            passthru = "Kaiserschmarrn";
+          };
           description = "A very secret name";
           example = "/run/secrets/a-name";
-          passthru = "Kaiserschmarrn";
         };
-        options.secretPassword = pkgs.systemd-credsubst-lib.mkLoadCredentialOption {
+        options.secretPassword = mkOption {
+          type = pkgs.systemd-credsubst-lib.types.loadCredential { };
           description = "A very secret password";
           example = "/run/secrets/a-password";
         };
@@ -59,7 +76,7 @@ in
       serviceConfig = {
         DynamicUser = true;
 
-        LoadCredential = pkgs.systemd-credsubst-lib.toLoadCredentialList cfg.settings;
+        LoadCredential = map (cred: cred.loadCredential) (collectLoadCredential cfg.settings);
         ExecStartPre = [
           "${pkgs.systemd-credsubst}/bin/systemd-credsubst --escape-newlines -i ${configFile} -o appsettings.json"
         ];
