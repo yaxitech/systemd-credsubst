@@ -1,8 +1,11 @@
+// Keep raw-string hash style consistent across tests; JSON fixtures need the hashes anyway.
+#![allow(clippy::needless_raw_string_hashes)]
+
 use std::fs::{File, OpenOptions};
 use std::io::prelude::*;
 use std::os::unix::fs::OpenOptionsExt;
 
-use assert_cmd::{crate_name, Command};
+use assert_cmd::{pkg_name, Command};
 use indoc::indoc;
 
 use anyhow::Result;
@@ -13,7 +16,7 @@ fn basic() -> Result<()> {
     let mut file = File::create(credentials_dir.path().join("yaxi-license"))?;
     file.write_all(b"hunter1\n\n")?;
 
-    let mut cmd = Command::cargo_bin(crate_name!())?;
+    let mut cmd = Command::cargo_bin(pkg_name!())?;
     let assert = cmd
         .env("CREDENTIALS_DIRECTORY", credentials_dir.path())
         .write_stdin(indoc! {r#"
@@ -60,7 +63,7 @@ fn basic_in_place() -> Result<()> {
         .as_bytes(),
     )?;
 
-    Command::cargo_bin(crate_name!())?
+    Command::cargo_bin(pkg_name!())?
         .env("CREDENTIALS_DIRECTORY", credentials_dir.path())
         .arg("--input")
         .arg(&input_filename)
@@ -90,7 +93,7 @@ fn ignores_copy_if_no_creds_with_creds_dir() -> Result<()> {
     let credentials_dir = tempfile::tempdir()?;
     File::create(credentials_dir.path().join("yaxi-license"))?.write_all(b"OG\n\n")?;
 
-    Command::cargo_bin(crate_name!())?
+    Command::cargo_bin(pkg_name!())?
         .env("CREDENTIALS_DIRECTORY", credentials_dir.path())
         .arg("--copy-if-no-creds")
         .write_stdin("license=${yaxi-license}")
@@ -113,7 +116,7 @@ fn fails_inaccessible_cred_file() -> Result<()> {
         .open(&yaxi_license_file)
         .unwrap();
 
-    Command::cargo_bin(crate_name!())?
+    Command::cargo_bin(pkg_name!())?
         .env("CREDENTIALS_DIRECTORY", credentials_dir.path())
         .write_stdin("license=${yaxi-license}")
         .assert()
@@ -133,7 +136,7 @@ fn fails_inaccessible_cred_file() -> Result<()> {
 
 #[test]
 fn fails_non_existing_infile() -> Result<()> {
-    Command::cargo_bin(crate_name!())?
+    Command::cargo_bin(pkg_name!())?
         .arg("--input")
         .arg("/file/does/not/exist")
         .assert()
@@ -149,7 +152,7 @@ fn fails_non_existing_infile() -> Result<()> {
 
 #[test]
 fn fails_inaccessible_outfile() -> Result<()> {
-    Command::cargo_bin(crate_name!())?
+    Command::cargo_bin(pkg_name!())?
         .arg("--copy-if-no-creds")
         .arg("--output")
         .arg("/file/does/not/exist")
@@ -168,7 +171,7 @@ fn fails_inaccessible_outfile() -> Result<()> {
 
 #[test]
 fn rejects_invalid_pattern() -> Result<()> {
-    Command::cargo_bin(crate_name!())?
+    Command::cargo_bin(pkg_name!())?
         .arg("--pattern")
         .arg(r#"wurzel(pfropf"#)
         .assert()
@@ -187,7 +190,7 @@ fn rejects_invalid_pattern() -> Result<()> {
 
 #[test]
 fn rejects_valid_pattern_without_id() -> Result<()> {
-    Command::cargo_bin(crate_name!())?
+    Command::cargo_bin(pkg_name!())?
         .arg("--pattern")
         .arg(r#"wurzelpfropf"#)
         .assert()
@@ -203,7 +206,7 @@ fn rejects_valid_pattern_without_id() -> Result<()> {
 
 #[test]
 fn fails_inaccessible_creds_dir() -> Result<()> {
-    Command::cargo_bin(crate_name!())?
+    Command::cargo_bin(pkg_name!())?
         .env("CREDENTIALS_DIRECTORY", "/does/not/exist")
         .write_stdin("Hi")
         .assert()
@@ -220,7 +223,7 @@ fn fails_inaccessible_creds_dir() -> Result<()> {
 
 #[test]
 fn fails_no_creds_dir_set() -> Result<()> {
-    Command::cargo_bin(crate_name!())?
+    Command::cargo_bin(pkg_name!())?
         .write_stdin("Bye")
         .assert()
         .stdout("")
@@ -236,7 +239,7 @@ fn fails_no_creds_dir_set() -> Result<()> {
 
 #[test]
 fn copy_if_no_creds() -> Result<()> {
-    Command::cargo_bin(crate_name!())?
+    Command::cargo_bin(pkg_name!())?
         .arg("--copy-if-no-creds")
         .write_stdin(indoc! {r#"
             ${wurzelpfropf}
@@ -259,7 +262,7 @@ fn make_parents() -> Result<()> {
     let out_dir = tempfile::tempdir()?;
     let output_filename = out_dir.path().join("wur/zel/pfropf");
 
-    Command::cargo_bin(crate_name!())?
+    Command::cargo_bin(pkg_name!())?
         .env("CREDENTIALS_DIRECTORY", credentials_dir.path())
         .arg("--output")
         .arg(&output_filename)
@@ -272,7 +275,8 @@ fn make_parents() -> Result<()> {
                 "password": "secret-password:${/with-special-chars}"
             }
         "#})
-        .assert();
+        .assert()
+        .success();
 
     assert_eq!(
         std::fs::read_to_string(output_filename)?,
@@ -291,7 +295,7 @@ fn make_parents() -> Result<()> {
 
 #[test]
 fn fails_no_make_parents() -> Result<()> {
-    Command::cargo_bin(crate_name!())?
+    Command::cargo_bin(pkg_name!())?
         .arg("--output")
         .arg("/does/not/exist")
         .arg("--copy-if-no-creds")
@@ -314,7 +318,7 @@ fn escape_newlines() -> Result<()> {
     let mut file = File::create(credentials_dir.path().join("yaxi-license"))?;
     file.write_all(b"This\nis\na\nmulti-line\n\n\nlicense\n")?;
 
-    let mut cmd = Command::cargo_bin(crate_name!())?;
+    let mut cmd = Command::cargo_bin(pkg_name!())?;
     let assert = cmd
         .env("CREDENTIALS_DIRECTORY", credentials_dir.path())
         .arg("--escape-newlines")

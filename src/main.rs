@@ -62,12 +62,9 @@ fn validate_path_exists(path: &str) -> Result<PathBuf, String> {
 }
 
 fn parse_pattern(pattern: &str) -> Result<Regex, String> {
-    let re = match Regex::new(pattern) {
-        Ok(re) => re,
-        Err(e) => return Err(e.to_string()),
-    };
+    let re = Regex::new(pattern).map_err(|e| e.to_string())?;
 
-    if !pattern.contains("(?P<id>") {
+    if !re.capture_names().any(|n| n == Some("id")) {
         return Err(String::from("Does not include a named group 'id'"));
     }
 
@@ -187,7 +184,7 @@ fn substitute(
                         .map(|s| s.trim_end().to_string())
                         .map(|s| {
                             if escape_newlines {
-                                s.replace("\n", "\\n")
+                                s.replace('\n', "\\n")
                             } else {
                                 s
                             }

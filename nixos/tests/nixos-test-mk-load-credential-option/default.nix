@@ -1,9 +1,9 @@
 {
-  nixosTest,
+  testers,
   # args
   systemdCredsubstOverlay,
 }:
-nixosTest {
+testers.nixosTest {
   name = "systemd-credsubst-test";
 
   nodes.machine = {

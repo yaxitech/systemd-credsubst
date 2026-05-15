@@ -1,11 +1,11 @@
 {
   lib,
-  nixosTest,
+  testers,
   systemd-credsubst,
   pkgsStatic,
 }:
 # Test if `systemd-credsubst` successfully substitutes `LoadCredential=` references
-nixosTest {
+testers.nixosTest {
   name = "systemd-credsubst-test";
 
   nodes.machine =

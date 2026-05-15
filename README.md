@@ -4,7 +4,7 @@
 
 [`envsubst`](https://github.com/a8m/envsubst) for systemd credentials.
 
-Given a systemd unit with any of the credential provisioning settings (e.g, `LoadCredential=ID` or `SetCredentialEncrypted=ID`, see systemd.exec(5)),
+Given a systemd unit with any of the credential provisioning settings (e.g., `LoadCredential=ID` or `SetCredentialEncrypted=ID`, see systemd.exec(5)),
 `systemd-credsubst` substitutes references to `${ID}` with the contents of the credential when called from `ExecStartPre=` or `ExecStart=`.
 
 ## Example
@@ -51,7 +51,7 @@ After running `systemd-credsubst` in `ExecStartPre=`, the file `/run/credsubst-s
 
 ## Usage
 
-`systemd-credsubst` (loosely) resembles the command line options of [`envsubst`](https://github.com/a8m/envsubst):
+`systemd-credsubst` (loosely) resembles the command-line options of [`envsubst`](https://github.com/a8m/envsubst):
 
 ```
 Substitute systemd credential references from ExecStart=/ExecStartPre= calls

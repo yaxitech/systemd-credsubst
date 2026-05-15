@@ -100,7 +100,7 @@
               commonArgs
               // {
                 inherit cargoArtifacts;
-                cargoClippyExtraArgs = "--all-targets -- --deny warnings";
+                cargoClippyExtraArgs = "--all-targets -- --warn clippy::pedantic --deny warnings";
               }
             );
 
@@ -197,7 +197,7 @@
       #
       {
         overlays.default = final: _prev: {
-          systemd-credsubst = self.packages.${final.system}.default;
+          systemd-credsubst = self.packages.${final.stdenv.hostPlatform.system}.default;
           systemd-credsubst-lib = self.lib;
         };
       }
